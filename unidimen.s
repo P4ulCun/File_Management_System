@@ -10,6 +10,7 @@
     //memory size in bytes for this example
 
     print_ADD: .asciz "%d: (%d, %d)\n"
+    print_GET: .asciz "(%d, %d)\n"
     print_test: .asciz "%d\n"
 
     scan_operatii: .asciz "%d"
@@ -105,6 +106,56 @@ cant_ADD:
     //afisez (0,0)
 
     ret
+
+GET:
+    lea vect, %edi
+
+    movl $0, %ecx
+    movl $0, %edx
+    movl $0, %esi
+    movl ID_fisier, %eax
+GET_loop:
+    cmpl size_of_memory, %ecx
+    je cant_GET
+
+    cmpl (%edi, %ecx, 4), %eax
+    jne GET_start_reset
+
+    incl %edx
+    incl %ecx
+
+    jmp GET_loop
+GET_start_reset:
+    cmpl $0, %edx
+    jne GET_done
+
+    incl %ecx
+    movl %ecx, %esi
+
+    jmp GET_loop
+
+GET_done:
+    decl %ecx
+
+    pushl %ecx
+    pushl %esi
+    pushl $print_GET
+    call printf
+    popl %ebx
+    popl %ebx
+    popl %ebx
+
+    ret
+cant_GET:
+    pushl $0
+    pushl $0
+    pushl $print_GET
+    call printf
+    popl %ebx
+    popl %ebx
+    popl %ebx
+
+    ret
 .global main
 main:
     lea vect, %edi
@@ -141,7 +192,7 @@ loop_operatii:
     movl cod_operatie, %eax
 // verific codul pentru instructiunea ADD
     cmpl $1, %eax
-    jne continue_to_2
+    jne continue_GET
 
 instruction_ADD:
     pushl %eax
@@ -188,7 +239,24 @@ loop_fisier_ADD:
     incl %eax
 
     jmp loop_fisier_ADD
-continue_to_2:
+continue_GET:
+    cmpl $2, %eax
+    jne continue_DELETE
+
+    pushl %ecx
+    pushl $ID_fisier
+    pushl $scan_ID_fisier
+    call scanf
+    popl %ebx
+    popl %ebx
+    popl %ecx
+
+    pushl %ecx
+    call GET
+    popl %ecx
+
+    jmp loop_operatii_inc
+continue_DELETE:
 
 loop_operatii_inc:
     incl %ecx
