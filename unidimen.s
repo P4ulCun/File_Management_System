@@ -215,14 +215,88 @@ DELETE_done:
     decl %ecx
     // in esi se afla inceputul de secventa
     // in ebp se afla sfarsitul de secventa
-    // cred, nu am testat
     movl %ecx, %ebp
     ret
 cant_DELETE:
+    movl $0, %esi
+    movl $0, %ebp
 
     ret
-DEFRAG:
 
+DEFRAG:
+    lea vect, %edi
+
+    movl $0, %ecx
+    movl $0, %edx
+DEFRAG_loop:
+    cmpl size_of_memory, %ecx
+    je DEFRAG_done
+
+    movl $0, %eax
+    cmpl %eax, (%edi, %ecx, 4)
+    jne DEFRAG_potential
+
+    incl %edx
+    incl %ecx
+
+    jmp DEFRAG_loop
+DEFRAG_potential:
+    cmpl $0, %edx
+    je DEFRAG_inc
+
+    //resetez contorul pentru secventa de 0
+    movl $0, %edx
+    movl (%edi, %ecx, 4), %esi
+    movl %esi, ID_fisier
+    //in esi sau ID_fisier se afla ID-ul fisierului de defregmentat
+
+    //defregmentez
+
+    //delete ID-fisier
+    //delete returneaza indecsii la ce a sters
+    //cu indecsii pot calcula length
+
+    pushl %ecx
+    pushl %edx
+    pushl %eax
+    call DELETE
+    //da return la esi inceput si ebp sfarsit
+    subl %esi, %ebp
+    incl %ebp
+    //in ebp se afla lenght si e corect
+
+    movl $8, %eax
+    xorl %edx, %edx
+    mull %ebp
+    movl %eax, %ebp
+
+    popl %eax
+    popl %edx
+    popl %ecx
+
+    //add id fisier de un lenght
+
+    movl %ebp, size_fisier
+    pushl %ecx
+    pushl %edx
+    pushl %eax
+    call ADD
+    popl %eax
+    popl %edx
+    popl %ecx
+    //in ebp se afla sfarsitul de secventa
+    
+    incl %ebp
+    movl %ebp, %ecx
+
+    jmp DEFRAG_loop
+DEFRAG_inc:
+    incl %ecx
+
+    jmp DEFRAG_loop
+DEFRAG_done:
+
+    ret
 
 AFISARE_memorie:
     lea vect, %edi
@@ -435,6 +509,10 @@ continue_DELETE:
 continue_DEFRAG:
     pushl %ecx
     call DEFRAG
+    popl %ecx
+
+    pushl %ecx
+    call AFISARE_memorie
     popl %ecx
 
     jmp loop_operatii_inc
