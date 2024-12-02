@@ -128,6 +128,12 @@ ADD_done:
     movl %ecx, %ebx
     movl %edx, %ebp
 
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
+
     ret
 cant_ADD:
     /*pushl ID_fisier
@@ -218,6 +224,13 @@ GET_done:
     // in ebx se afla end_col
     // in ebp se afla start_col
     movl %ecx, %ebx
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
+
 //  si in esi se afla inceputul de secventa
     ret
 cant_GET:
@@ -245,12 +258,38 @@ DELETE:
     movl $0, %ecx
     movl $0, %edx
     movl $0, %esi
+    movl $0, %ebp
     movb ID_fisier, %al
     //in edx tin lungimea secventei 
 DELETE_loop:
     cmpl size_of_memory, %ecx
     je cant_DELETE
 
+    cmpl $0, %ecx
+    je DELETE_loop_continue
+
+    pushl %eax
+    pushl %edx
+
+    movl %ecx, %eax
+    xorl %edx, %edx
+    movl size_of_memory_line, %ebx
+    divl %ebx
+
+    movl %edx, %ebx
+
+    popl %edx
+    popl %eax
+//check line max
+
+    cmpl $0, %ebx
+    jne DELETE_loop_continue
+
+    incl %esi
+    movl %ecx, %ebp
+    //changing the current line
+
+DELETE_loop_continue:
     cmpb (%edi, %ecx, 1), %al
     jne DELETE_reset
 
@@ -265,15 +304,23 @@ DELETE_reset:
     jne DELETE_done
 
     incl %ecx
-    movl %ecx, %esi
+    movl %ecx, %ebp
 
     jmp DELETE_loop
 
 DELETE_done:
     decl %ecx
-    // in esi se afla inceputul de secventa
-    // in ebp se afla sfarsitul de secventa
-    movl %ecx, %ebp
+
+    movl %ecx, %ebx
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
     ret
 cant_DELETE:
     movl $0, %esi
@@ -362,10 +409,32 @@ AFISARE_memorie:
 
     movl $1, %ecx
     movl $0, %esi
+    movl $0, %ebp
 AFISARE_loop:
     cmpl size_of_memory, %ecx
     je AFISARE_done
 
+    pushl %eax
+    pushl %edx
+
+    movl %ecx, %eax
+    xorl %edx, %edx
+    movl size_of_memory_line, %ebx
+    divl %ebx
+
+    movl %edx, %ebx
+
+    popl %edx
+    popl %eax
+//check line max
+
+    cmpl $0, %ebx
+    je AFISARE_fin_lin
+
+    //incl %esi
+    //movl %ecx, %ebp
+
+AFISARE_loop_continue:
     movb (%edi, %ecx, 1), %al
     movl %ecx, %ebx
     decl %ebx
@@ -384,7 +453,23 @@ AFISARE_reset:
     movb (%edi, %ebx, 1), %dl
 
     pushl %ecx
+
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
+    pushl %edx
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
+
+    popl %edx
+
     pushl %ebx
+    pushl %esi
+    pushl %ebp
     pushl %esi
     pushl %edx
     pushl $print_ADD
@@ -393,9 +478,59 @@ AFISARE_reset:
     popl %ebx
     popl %ebx
     popl %ebx
+    popl %ebx
+    popl %ebx
+
     popl %ecx
+
+    jmp AFISARE_inc
+AFISARE_fin_lin:
+    movl $0, %eax
+    movl %ecx, %ebx
+    decl %ebx
+    cmpb (%edi, %ebx, 1), %al
+    je AFISARE_fin_inc
+
+    movl $0, %edx
+    movb (%edi, %ebx, 1), %dl
+
+    pushl %ecx
+
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
+    pushl %edx
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
+
+    popl %edx
+
+    pushl %ebx
+    pushl %esi
+    pushl %ebp
+    pushl %esi
+    pushl %edx
+    pushl $print_ADD
+    call printf
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+
+    popl %ecx
+
+    incl %esi
+    jmp AFISARE_inc
+AFISARE_fin_inc:
+    incl %esi
 AFISARE_inc:
-    movl %ecx, %esi
+    movl %ecx, %ebp
     incl %ecx
 
     jmp AFISARE_loop
@@ -489,12 +624,6 @@ loop_fisier_ADD:
     pushl %ecx
     pushl %eax
 
-    movl size_of_memory_line, %eax
-    xorl %edx, %edx
-    mull %esi
-    subl %eax, %ebx
-    subl %eax, %ebp
-    //ca sa afisez indexul corect, adica j (coloana)
     pushl %ebx
     pushl %esi
     pushl %ebp
@@ -559,12 +688,6 @@ continue_GET:
 
     pushl %ecx
 
-    movl size_of_memory_line, %eax
-    xorl %edx, %edx
-    mull %esi
-    subl %eax, %ebx
-    subl %eax, %ebp
-
     pushl %ebx
     pushl %esi
     pushl %ebp
@@ -576,7 +699,7 @@ continue_GET:
     popl %ebx
     popl %ebx
     popl %ebx
-    
+
     popl %ecx
 
     // in esi se afla start/end_lin
