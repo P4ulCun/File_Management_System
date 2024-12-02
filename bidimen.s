@@ -1,16 +1,17 @@
 .section .note.GNU-stack,"",@progbits
 .data
-    vect: .space 1000
+    vect: .space 64
     operatii: .space 4
     cod_operatie: .space 4
     nr_fisiere: .space 4
     ID_fisier: .space 4
     size_fisier: .space 4
-    size_of_memory: .long 1000
+    size_of_memory: .long 64
+    size_of_memory_line: .long 8
     //memory size in bytes for this example
 
-    print_ADD: .asciz "%d: (%d, %d)\n"
-    print_GET: .asciz "(%d, %d)\n"
+    print_ADD: .asciz "%d: ((%d, %d), (%d, %d))\n"
+    print_GET: .asciz "((%d, %d), (%d, %d))\n"
     print_test: .asciz "%d\n"
 
     scan_operatii: .asciz "%d"
@@ -38,12 +39,40 @@ ADD_flag:
     movl $0, %edx
     //edx counter de blocuri
     movl $0, %esi
-    //in esi tin indexul de la inceputul secventei de 0
+    //in esi tin linia curenta / pe care se va afla fisierul adaugat
+    movl $0, %ebp
+    //in ebp tin indexul start_col 
 ADD_loop:
 // daca am ajuns la sfarsitul memoriei nu pot sa pun fisierul
     cmpl size_of_memory, %ecx
     je cant_ADD
 
+    //trec prin elementele fiecarei linii
+    cmpl $0, %ecx
+    je ADD_loop_continue
+
+    pushl %eax
+    pushl %edx
+
+    movl %ecx, %eax
+    xorl %edx, %edx
+    movl size_of_memory_line, %ebx
+    divl %ebx
+
+    movl %edx, %ebx
+
+    popl %edx
+    popl %eax
+//check line max
+
+    cmpl $0, %ebx
+    jne ADD_loop_continue
+
+    incl %esi
+    movl %ecx, %ebp
+    movl $0, %edx
+    //changing the current line
+ADD_loop_continue:
     movb $0, %bl
     cmpb (%edi, %ecx, 1), %bl
     jne ADD_count_reset
@@ -58,21 +87,21 @@ ADD_loop:
     jmp ADD_loop
 ADD_count_reset:
     incl %ecx
-    movl %ecx, %esi
+    movl %ecx, %ebp
 
     movl $0, %edx
 
     jmp ADD_loop
 ADD_valid_block:
-    movl %esi, %edx
+    movl %ebp, %edx
 
 ADD_section_fill:
-    cmpl %ecx, %esi
+    cmpl %ecx, %ebp
     jg ADD_done
 
     movb ID_fisier, %al
-    movb %al, (%edi, %esi, 1)
-    incl %esi
+    movb %al, (%edi, %ebp, 1)
+    incl %ebp
 
     jmp ADD_section_fill
     //umplu de la index de inceput %esi, pana la index de final %ecx
@@ -93,10 +122,11 @@ ADD_done:
 
     //sau
 
-    // in esi se afla inceputul de secventa
-    // in ebp se afla sfarsitul de secventa
-    movl %ecx, %ebp
-    movl %edx, %esi
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
+    movl %ecx, %ebx
+    movl %edx, %ebp
 
     ret
 cant_ADD:
@@ -113,7 +143,7 @@ cant_ADD:
 
     //sau
 
-    movl $0, %ebp
+    movl $0, %ebx
     ret
 
 GET:
@@ -127,6 +157,34 @@ GET_loop:
     cmpl size_of_memory, %ecx
     je cant_GET
 
+    cmpl $0, %ecx
+    je GET_loop_continue
+
+    pushl %eax
+    pushl %edx
+
+    movl %ecx, %eax
+    xorl %edx, %edx
+    movl size_of_memory_line, %ebx
+    divl %ebx
+
+    movl %edx, %ebx
+
+    popl %edx
+    popl %eax
+    
+    cmpl $0, %ebx
+    jne GET_loop_continue
+
+    cmpl $0, %edx
+    jne GET_done
+
+    incl %esi
+    movl %ecx, %ebp
+
+    incl %ecx
+
+GET_loop_continue:
     cmpb (%edi, %ecx, 1), %al
     jne GET_start_reset
 
@@ -139,7 +197,7 @@ GET_start_reset:
     jne GET_done
 
     incl %ecx
-    movl %ecx, %esi
+    movl %ecx, %ebp
 
     jmp GET_loop
 
@@ -156,9 +214,10 @@ GET_done:
 
     //sau
 
-    // in esi se afla inceputul de secventa
-    // in ebp se afla sfarsitul de secventa
-    movl %ecx, %ebp
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
+    movl %ecx, %ebx
 //  si in esi se afla inceputul de secventa
     ret
 cant_GET:
@@ -172,7 +231,7 @@ cant_GET:
 
     //sau
 
-    movl $0, %ebp
+    movl $0, %ebx
 
     ret
 
@@ -424,11 +483,20 @@ loop_fisier_ADD:
     popl %ecx
     popl %eax
 
-    cmpl $0, %ebp
+    cmpl $0, %ebx
     je ADD_afisare
 
     pushl %ecx
     pushl %eax
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
+    //ca sa afisez indexul corect, adica j (coloana)
+    pushl %ebx
+    pushl %esi
     pushl %ebp
     pushl %esi
     pushl ID_fisier
@@ -438,15 +506,22 @@ loop_fisier_ADD:
     popl %ebx
     popl %ebx
     popl %ebx
+    popl %ebx
+    popl %ebx
+
     popl %eax
     popl %ecx
-    // in esi se afla inceputul de secventa
-    // in ebp se afla sfarsitul de secventa
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
     jmp ADD_inc
 ADD_afisare:
 
     pushl %ecx
     pushl %eax
+
+    pushl $0
+    pushl $0
     pushl $0
     pushl $0
     pushl $print_GET
@@ -454,6 +529,9 @@ ADD_afisare:
     popl %ebx
     popl %ebx
     popl %ebx
+    popl %ebx
+    popl %ebx
+
     popl %eax
     popl %ecx
 ADD_inc:
@@ -476,10 +554,19 @@ continue_GET:
     call GET
     popl %ecx
 
-    cmpl $0, %ebp
+    cmpl $0, %ebx
     je GET_afisare
 
     pushl %ecx
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
+
+    pushl %ebx
+    pushl %esi
     pushl %ebp
     pushl %esi
     pushl $print_GET
@@ -487,11 +574,19 @@ continue_GET:
     popl %ebx
     popl %ebx
     popl %ebx
+    popl %ebx
+    popl %ebx
+    
     popl %ecx
 
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
     jmp loop_operatii_inc
 GET_afisare:
     pushl %ecx
+    pushl $0
+    pushl $0
     pushl $0
     pushl $0
     pushl $print_GET
@@ -499,9 +594,10 @@ GET_afisare:
     popl %ebx
     popl %ebx
     popl %ebx
+    popl %ebx
+    popl %ebx
     popl %ecx
-    // in esi se afla inceputul de secventa
-    // in ebp se afla sfarsitul de secventa
+    
     jmp loop_operatii_inc
 continue_DELETE:
     cmpl $3, %eax
