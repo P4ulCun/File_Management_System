@@ -285,6 +285,11 @@ DELETE_loop:
     cmpl $0, %ebx
     jne DELETE_loop_continue
 
+    movl %ecx, %ebx
+    decl %ebx
+    cmpl $0, %edx
+    jne DELETE_done
+
     incl %esi
     movl %ecx, %ebp
     //changing the current line
@@ -316,11 +321,42 @@ DELETE_done:
     // in ebx se afla end_col
     // in ebp se afla start_col
 
+    /*pushl %ecx
+    pushl $print_test
+    call printf
+    popl %eax
+    popl %ecx
+
+    pushl %ebp
+    pushl $print_test
+    call printf
+    popl %eax
+    popl %ebp */
+
     movl size_of_memory_line, %eax
     xorl %edx, %edx
     mull %esi
     subl %eax, %ebx
     subl %eax, %ebp
+
+    /*pushl %esi
+    pushl $print_test
+    call printf
+    popl %eax
+    popl %esi
+
+    pushl %ebp
+    pushl $print_test
+    call printf
+    popl %eax
+    popl %esi
+    
+    pushl %ebx
+    pushl $print_test
+    call printf
+    popl %eax
+    popl %esi*/
+
     ret
 cant_DELETE:
     movl $0, %esi
@@ -354,7 +390,6 @@ DEFRAG_potential:
     movl %edx, ID_fisier
     movb (%edi, %ecx, 1), %al
     movb %al, ID_fisier
-    //in esi sau ID_fisier se afla ID-ul fisierului de defregmentat
 
     //defregmentez
 
@@ -363,26 +398,42 @@ DEFRAG_potential:
     //cu indecsii pot calcula length
 
     pushl %ecx
+
     pushl %edx
     pushl %eax
     call DELETE
-    //da return la esi inceput si ebp sfarsit
-    subl %esi, %ebp
-    incl %ebp
-    //in ebp se afla lenght si e corect
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
+    subl %ebp, %ebx
+    incl %ebx
+    //in ebx se afla lenght
 
     movl $8, %eax
     xorl %edx, %edx
-    mull %ebp
-    movl %eax, %ebp
+    mull %ebx
+    movl %eax, %ebx
 
     popl %eax
     popl %edx
+
     popl %ecx
+
+    /*pushl %eax
+    pushl %ecx
+    pushl %edx
+    pushl %ebx
+    pushl $print_test
+    call printf
+    popl %ebx
+    popl %ebx
+    popl %edx3
+-
+    popl %eax*/
 
     //add id fisier de un lenght
 
-    movl %ebp, size_fisier
+    movl %ebx, size_fisier
     pushl %ecx
     pushl %edx
     pushl %eax
@@ -390,10 +441,20 @@ DEFRAG_potential:
     popl %eax
     popl %edx
     popl %ecx
-    //in ebp se afla sfarsitul de secventa
-    
-    incl %ebp
-    movl %ebp, %ecx
+    //in ebx se afla end_col (coloana) si eu il vreau adunat cu linia pe care e
+    pushl %edx
+    pushl %eax
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    addl %eax, %ebx
+
+    popl %eax
+    popl %edx
+
+    incl %ebx
+    movl %ebx, %ecx
 
     jmp DEFRAG_loop
 DEFRAG_inc:
