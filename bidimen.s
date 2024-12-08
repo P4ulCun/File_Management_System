@@ -5,6 +5,7 @@
     cod_operatie: .space 4
     nr_fisiere: .space 4
     ID_fisier: .space 4
+    offset_add: .space 4
     size_fisier: .space 4
     size_of_memory: .long 64
     size_of_memory_line: .long 8
@@ -35,12 +36,29 @@ ADD:
 
 ADD_flag:
     movl $0, %ecx
+    addl offset_add, %ecx
     // cu ecx trec prin memorie
+
+    cmpl $0, %ecx
+    je ADD_offset
+
+    pushl %eax
+
+    movl %ecx, %eax
+    xorl %edx, %edx
+    movl size_of_memory_line, %ebx
+    divl %ebx
+
+    popl %eax
+
+ADD_offset:
+    //linia curenta cu offset cu tot
+    movl %edx, %esi
+    //in esi tin linia curenta / pe care se va afla fisierul adaugat
     movl $0, %edx
     //edx counter de blocuri
-    movl $0, %esi
-    //in esi tin linia curenta / pe care se va afla fisierul adaugat
     movl $0, %ebp
+    addl offset_add, %ebp
     //in ebp tin indexul start_col 
 ADD_loop:
 // daca am ajuns la sfarsitul memoriei nu pot sa pun fisierul
@@ -366,6 +384,8 @@ cant_DELETE:
 
 DEFRAG:
     lea vect, %edi
+    movl $0, %ebx
+    movl %ebx, offset_add
 
     movl $0, %ecx
     movl $0, %edx
@@ -379,6 +399,7 @@ DEFRAG_loop:
 
     incl %edx
     incl %ecx
+    //aflu daca inainte de fisier am o secventa de 0, deci potential spatiu de defragmentat
 
     jmp DEFRAG_loop
 DEFRAG_potential:
@@ -434,6 +455,7 @@ DEFRAG_potential:
     //add id fisier de un lenght
 
     movl %ebx, size_fisier
+
     pushl %ecx
     pushl %edx
     pushl %eax
@@ -456,9 +478,26 @@ DEFRAG_potential:
     incl %ebx
     movl %ebx, %ecx
 
+    movl %ecx, offset_add
+
+    pushl %ecx
+    pushl %eax
+    pushl %edx
+    pushl offset_add
+    pushl $print_test
+    call printf
+    popl %ebx
+    popl %ebx
+    popl %edx
+    popl %eax
+    popl %ecx
+
+    //offset pentru add ca sa mi ia in ordine
+
     jmp DEFRAG_loop
 DEFRAG_inc:
     incl %ecx
+    //movl %ecx, offset_add
 
     jmp DEFRAG_loop
 DEFRAG_done:
@@ -672,6 +711,9 @@ loop_fisier_ADD:
     popl %ebx
     popl %ecx
     popl %eax
+
+    movl $0, %ebx
+    movl %ebx, offset_add
 
     pushl %eax
     pushl %ecx
