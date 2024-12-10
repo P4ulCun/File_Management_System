@@ -291,7 +291,7 @@ DELETE:
     //in edx tin lungimea secventei 
 DELETE_loop:
     cmpl size_of_memory, %ecx
-    je cant_DELETE
+    je DELETE_final_check
 
     cmpl $0, %ecx
     je DELETE_loop_continue
@@ -384,6 +384,21 @@ DELETE_done:
     call printf
     popl %eax
     popl %esi*/
+
+    ret
+DELETE_final_check:
+    decl %ecx
+
+    cmpl $0, %edx
+    je cant_DELETE
+
+    movl %ecx, %ebx
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
 
     ret
 cant_DELETE:
