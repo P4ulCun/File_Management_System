@@ -1,14 +1,14 @@
 .section .note.GNU-stack,"",@progbits
 .data
-    vect: .space 64
+    vect: .space 1048576
     operatii: .space 4
     cod_operatie: .space 4
     nr_fisiere: .space 4
     ID_fisier: .space 4
     offset_add: .space 4
     size_fisier: .space 4
-    size_of_memory: .long 64
-    size_of_memory_line: .long 8
+    size_of_memory: .long 1048576
+    size_of_memory_line: .long 1024
     //memory size in bytes for this example
 
     print_ADD: .asciz "%d: ((%d, %d), (%d, %d))\n"
@@ -38,6 +38,9 @@ ADD_flag:
     movl $0, %ecx
     addl offset_add, %ecx
     // cu ecx trec prin memorie
+
+    movl $0, %edx
+    // ca sa initializez esi cu 0 chiar daca incep de la inceput
 
     cmpl $0, %ecx
     je ADD_offset
@@ -480,18 +483,6 @@ DEFRAG_potential:
 
     movl %ecx, offset_add
 
-    pushl %ecx
-    pushl %eax
-    pushl %edx
-    pushl offset_add
-    pushl $print_test
-    call printf
-    popl %ebx
-    popl %ebx
-    popl %edx
-    popl %eax
-    popl %ecx
-
     //offset pentru add ca sa mi ia in ordine
 
     jmp DEFRAG_loop
@@ -501,6 +492,12 @@ DEFRAG_inc:
 
     jmp DEFRAG_loop
 DEFRAG_done:
+    pushl %ebx
+
+    movl $0, %ebx
+    movl %ebx, offset_add
+
+    popl %ebx
 
     ret
 

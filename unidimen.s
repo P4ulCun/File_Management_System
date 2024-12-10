@@ -1,12 +1,12 @@
 .section .note.GNU-stack,"",@progbits
 .data
-    vect: .space 1000
+    vect: .space 1024
     operatii: .space 4
     cod_operatie: .space 4
     nr_fisiere: .space 4
     ID_fisier: .space 4
     size_fisier: .space 4
-    size_of_memory: .long 1000
+    size_of_memory: .long 1024
     //memory size in bytes for this example
 
     print_ADD: .asciz "%d: (%d, %d)\n"
@@ -125,7 +125,7 @@ GET:
     movb ID_fisier, %al
 GET_loop:
     cmpl size_of_memory, %ecx
-    je cant_GET
+    je GET_final_check
 
     cmpb (%edi, %ecx, 1), %al
     jne GET_start_reset
@@ -161,7 +161,7 @@ GET_done:
     movl %ecx, %ebp
 //  si in esi se afla inceputul de secventa
     ret
-cant_GET:
+GET_final_check:
     /*pushl $0
     pushl $0
     pushl $print_GET
@@ -172,6 +172,16 @@ cant_GET:
 
     //sau
 
+//mai verific sfarsitul de vector
+    decl %ecx
+    movb ID_fisier, %al
+    cmpb %al, (%edi, %ecx, 1)
+    jne cant_GET
+
+    movl %ecx, %ebp
+
+    ret
+cant_GET:
     movl $0, %ebp
 
     ret
@@ -190,7 +200,7 @@ DELETE:
     //in edx tin lungimea secventei 
 DELETE_loop:
     cmpl size_of_memory, %ecx
-    je cant_DELETE
+    je DELETE_final_check
 
     cmpb (%edi, %ecx, 1), %al
     jne DELETE_reset
@@ -215,6 +225,16 @@ DELETE_done:
     // in esi se afla inceputul de secventa
     // in ebp se afla sfarsitul de secventa
     movl %ecx, %ebp
+
+    ret
+DELETE_final_check:
+    decl %ecx
+
+    cmpl $0, %edx
+    je cant_DELETE
+
+    movl %ecx, %ebp
+
     ret
 cant_DELETE:
     movl $0, %esi
@@ -261,8 +281,10 @@ DEFRAG_potential:
     pushl %eax
     call DELETE
     //da return la esi inceput si ebp sfarsit
+
     subl %esi, %ebp
     incl %ebp
+
     //in ebp se afla lenght si e corect
 
     movl $8, %eax
@@ -305,7 +327,7 @@ AFISARE_memorie:
     movl $0, %esi
 AFISARE_loop:
     cmpl size_of_memory, %ecx
-    je AFISARE_done
+    je AFISARE_final_check
 
     movb (%edi, %ecx, 1), %al
     movl %ecx, %ebx
@@ -340,6 +362,28 @@ AFISARE_inc:
     incl %ecx
 
     jmp AFISARE_loop
+AFISARE_final_check:
+    decl %ecx
+    movl %ecx, %ebx
+    movb (%edi, %ebx, 1), %al
+
+    cmpb $0, %al
+    je AFISARE_done
+
+    movl $0, %edx
+    movb (%edi, %ebx, 1), %dl
+
+    pushl %ecx
+    pushl %ebx
+    pushl %esi
+    pushl %edx
+    pushl $print_ADD
+    call printf
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ecx
 AFISARE_done:
 
     ret
@@ -377,6 +421,7 @@ loop_operatii:
     popl %ecx
 //eax e codul de intructiune
     movl cod_operatie, %eax
+
 // verific codul pentru instructiunea ADD
     cmpl $1, %eax
     jne continue_GET
