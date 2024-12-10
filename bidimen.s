@@ -1,14 +1,14 @@
 .section .note.GNU-stack,"",@progbits
 .data
-    vect: .space 1048576
+    vect: .space 16
     operatii: .space 4
     cod_operatie: .space 4
     nr_fisiere: .space 4
     ID_fisier: .space 4
     offset_add: .space 4
     size_fisier: .space 4
-    size_of_memory: .long 1048576
-    size_of_memory_line: .long 1024
+    size_of_memory: .long 16
+    size_of_memory_line: .long 4
     //memory size in bytes for this example
 
     print_ADD: .asciz "%d: ((%d, %d), (%d, %d))\n"
@@ -182,7 +182,7 @@ GET:
     movb ID_fisier, %al
 GET_loop:
     cmpl size_of_memory, %ecx
-    je cant_GET
+    je GET_final_check
 
     cmpl $0, %ecx
     je GET_loop_continue
@@ -254,17 +254,24 @@ GET_done:
 
 //  si in esi se afla inceputul de secventa
     ret
+GET_final_check:
+
+    decl %ecx
+    movb ID_fisier, %al
+    cmpb %al, (%edi, %ecx, 1)
+    jne cant_GET
+
+    movl %ecx, %ebx
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
+
+    ret
+
 cant_GET:
-    /*pushl $0
-    pushl $0
-    pushl $print_GET
-    call printf
-    popl %ebx
-    popl %ebx
-    popl %ebx*/
-
-    //sau
-
     movl $0, %ebx
 
     ret
@@ -509,7 +516,7 @@ AFISARE_memorie:
     movl $0, %ebp
 AFISARE_loop:
     cmpl size_of_memory, %ecx
-    je AFISARE_done
+    je AFISARE_final_check
 
     pushl %eax
     pushl %edx
@@ -631,6 +638,47 @@ AFISARE_inc:
     incl %ecx
 
     jmp AFISARE_loop
+AFISARE_final_check:
+    decl %ecx
+    movl %ecx, %ebx
+    movb $0, %dl
+    cmpb (%edi, %ebx, 1), %dl
+    je AFISARE_done
+
+    movl $0, %edx
+    movb (%edi, %ebx, 1), %dl
+
+    pushl %ecx
+
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
+    pushl %edx
+
+    movl size_of_memory_line, %eax
+    xorl %edx, %edx
+    mull %esi
+    subl %eax, %ebx
+    subl %eax, %ebp
+
+    popl %edx
+
+    pushl %ebx
+    pushl %esi
+    pushl %ebp
+    pushl %esi
+    pushl %edx
+    pushl $print_ADD
+    call printf
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+
+    popl %ecx
+
 AFISARE_done:
 
     ret
