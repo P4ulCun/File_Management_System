@@ -1,12 +1,16 @@
 .section .note.GNU-stack,"",@progbits
 .data
-    dir_name: .asciz "/home/paul/laborator_ASC/concrete_test"
+    dir_name: .asciz "/home/paul/laborator_asc/folder_text"
     file_name: .space 256
+    file_size: .space 4
     dir_dot: .byte '.'
+    ID_fisier: .space 4
+    buffer: .space 144
 
     // adica punct in ascii
 
     format_snprintf: .asciz "%s/%s"
+    print_endl: .asciz "\n"
     print_int: .asciz "%d\n"
     print_string: .asciz "%s\n"
     print_char: .asciz "%c\n"
@@ -83,7 +87,7 @@ loop_dir:
 
     popl %ebx
 
-    pushl %eax
+// in filename se afla pathul absolut al directorului
 
     pushl $file_name
     pushl $print_string
@@ -91,11 +95,46 @@ loop_dir:
     popl %edx
     popl %edx
 
+// fac open pentru fiecare fisier ca sa aflu id ul si size ul
+    
+    pushl $0
+    pushl $file_name
+    call open
+    popl %edx
+    popl %edx
+
+//in eax se afla fd (descriptorul) fisierului curent
+    pushl %ebx
+    pushl %eax
+    pushl $print_int
+    call printf
+    popl %edx
+    popl %eax
+    popl %ebx
+
+    movl %eax, ID_fisier
+
+    pushl $buffer
+    pushl ID_fisier
+    call fstat
+    popl %edx
+    popl %edx
+
+    movl $buffer, %eax
+    addl $44, %eax
+    // 44 offset ca sa ajung la st_size
+    // e bine
+
+    // in (%eax) se afla size-ul fisierului
+    pushl (%eax)
+    pushl $print_int
+    call printf
+    popl %edx
     popl %eax
 
-// fac open pentru fiecare fisier ca sa aflu id ul si size ul
-
-    call open
+    pushl $print_endl
+    call printf
+    popl %edx
 read_next_file:
     movl %ebx, %eax
     // mut inapoi in eax pointerul spre directory stream
@@ -109,7 +148,6 @@ Not_a_directory:
     popl %eax
 
     jmp et_exit
-
 
 //
     /*movl $5, %eax
