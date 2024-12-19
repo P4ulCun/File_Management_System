@@ -1,13 +1,14 @@
 .section .note.GNU-stack,"",@progbits
 .data
-    vect: .space 1048576
+    vect: .space 262144
+    // size of memory line (1024) * 256 de linii (nr max de fisiere)
     operatii: .space 4
     cod_operatie: .space 4
     nr_fisiere: .space 4
     ID_fisier: .space 4
     offset_add: .space 4
     size_fisier: .space 4
-    size_of_memory: .long 1048576
+    size_of_memory: .long 262144
     size_of_memory_line: .long 1024
     //memory size in bytes for this example
 
@@ -179,6 +180,7 @@ GET:
     movl $0, %ecx
     movl $0, %edx
     movl $0, %esi
+    movl $0, %ebp
     movb ID_fisier, %al
 GET_loop:
     cmpl size_of_memory, %ecx
@@ -220,6 +222,20 @@ GET_loop_continue:
 
     jmp GET_loop
 GET_start_reset:
+    /*pushl %eax
+    pushl %edx
+    pushl %ecx
+    
+
+    pushl $print_test
+    call printf
+    popl %ebx
+
+    popl %ecx
+    popl %edx
+    
+    popl %eax*/
+
     cmpl $0, %edx
     jne GET_done
 
