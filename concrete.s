@@ -1,6 +1,6 @@
 .section .note.GNU-stack,"",@progbits
 .data
-    dir_name: .asciz "/home/paul/laborator_asc/folder_text"
+    dir_name: .asciz "/home/paul/repos/Proiect_ASC/folder_text"
     file_name: .space 256
     file_size: .space 4
     dir_dot: .byte '.'
