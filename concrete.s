@@ -4,9 +4,10 @@
     file_name: .space 256
     file_size: .space 4
     dir_dot: .byte '.'
-    ID_fisier: .space 4
     buffer: .space 144
 
+
+    ID_fisier: .space 4
     // adica punct in ascii
 
     format_snprintf: .asciz "%s/%s"

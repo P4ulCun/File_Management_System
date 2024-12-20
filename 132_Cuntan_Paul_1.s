@@ -1,5 +1,11 @@
 .section .note.GNU-stack,"",@progbits
 .data
+    dir_name: .space 256
+    file_name: .space 256
+    file_size: .space 4
+    dir_dot: .byte '.'
+    buffer: .space 144
+
     vect: .space 262144
     // size of memory line (1024) * 256 de linii (nr max de fisiere)
     operatii: .space 4
@@ -12,10 +18,19 @@
     size_of_memory_line: .long 1024
     //memory size in bytes for this example
 
+    //for concrete
+    
+    format_snprintf: .asciz "%s/%s"
+
     print_ADD: .asciz "%d: ((%d, %d), (%d, %d))\n"
     print_GET: .asciz "((%d, %d), (%d, %d))\n"
     print_test: .asciz "%d\n"
+    print_string: .asciz "%s\n"
+    print_endl: .asciz "\n"
+    print_int: .asciz "%d\n"
+    print_urgenta: .asciz "!! %d !!\n"
 
+    scan_path: .asciz "%s"
     scan_operatii: .asciz "%d"
     scan_cod_operatie: .asciz "%d"
     scan_nr_fisiere: .asciz "%d"
@@ -799,7 +814,7 @@ loop_fisier_ADD:
 
     cmpl $0, %ebx
     je ADD_afisare
-
+    //nu are loc in memorie
     pushl %ecx
     pushl %eax
 
@@ -925,6 +940,9 @@ continue_DELETE:
 
     jmp loop_operatii_inc
 continue_DEFRAG:
+    cmpl $4, %eax
+    jne continue_CONCRETE
+
     pushl %ecx
     call DEFRAG
     popl %ecx
@@ -934,6 +952,312 @@ continue_DEFRAG:
     popl %ecx
 
     jmp loop_operatii_inc
+
+continue_CONCRETE:
+
+    pushl %ecx
+    pushl $dir_name
+    pushl $scan_path
+    call scanf
+    popl %ebx
+    popl %ebx
+    popl %ecx
+
+    // incercam sa deschidem un director
+    movl $dir_name, %eax
+
+    pushl %ecx
+
+    pushl %eax
+    call opendir
+    popl %ebx
+
+    popl %ecx
+    //si in eax ar trb sa fie pointer spre directorul meu / pointer to directory stream
+
+    //loop prin fisierrele directorului
+loop_dir:
+    pushl %ecx
+
+    pushl %eax
+    call readdir
+    popl %ebx
+
+    popl %ecx
+
+    // verific daca am ajuns la sfarsitul directorului
+    cmpl $0, %eax
+    je loop_dir_done
+
+    //in ebx ramane pointerul spre strucutra de directoare
+
+    // eax se afla un nou pointer spre structura dirent
+    addl $11, %eax
+    // adaug offset la pointer ca sa ma duca la elementul d_name din structura dirent
+
+    // daca intalnesc directorul . sau .. incerc iar
+    
+
+    movl $0, %esi
+    movl $0, %edx
+
+    movb dir_dot, %dl
+    cmpb (%eax, %esi, 1), %dl
+    je read_next_file
+// incerc urmatorul fisier din director
+    pushl %ecx
+
+    /*pushl %eax
+    pushl $print_string
+    call printf
+    popl %edx
+    popl %eax*/
+
+    popl %ecx
+// refac absolute path pentru fisier: snprintf(location, size of location, format of location, dir path, file_name) = absolute path to specified file
+    pushl %ecx
+
+    pushl %ebx
+
+    pushl %eax
+    pushl $dir_name
+    pushl $format_snprintf
+    pushl $256
+    pushl $file_name
+    call snprintf
+    popl %edx
+    popl %edx
+    popl %edx
+    popl %edx
+    popl %eax
+
+    popl %ebx
+
+    popl %ecx
+
+// in filename se afla pathul absolut al directorului
+    pushl %ecx
+
+    /*pushl $file_name
+    pushl $print_string
+    call printf
+    popl %edx
+    popl %edx*/
+
+    popl %ecx
+// fac open pentru fiecare fisier ca sa aflu id ul si size ul
+    pushl %ecx
+
+    pushl $0
+    pushl $file_name
+    call open
+    popl %edx
+    popl %edx
+
+    popl %ecx
+//in eax se afla fd (descriptorul) fisierului curent
+// trebuie sa aplic ID ului mod 255 + 1 ca sa fie un id valid
+    /*pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+
+    xorl %edx, %edx
+    movl ID_fisier, %eax
+    //in eax e id-ul
+    movl $255, %ebx
+    divl %ebx
+    //in edx e restul modulo 255
+    incl %edx
+    //in edx e id-ul corect al fisierului
+    movl %edx, ID_fisier
+
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax  */
+    movl %eax, ID_fisier
+
+    pushl %ecx
+
+    /*pushl %ebx
+    pushl ID_fisier
+    pushl $print_int
+    call printf
+    popl %edx
+    popl %edx
+    popl %ebx*/
+
+    popl %ecx
+
+
+    pushl %ecx
+
+    pushl $buffer
+    pushl ID_fisier
+    call fstat
+    popl %edx
+    popl %edx
+
+    popl %ecx
+
+    movl $buffer, %eax
+    addl $44, %eax
+    // 44 offset ca sa ajung la st_size
+    // e bine
+
+    // in (%eax) se afla size-ul fisierului
+    movl (%eax), %edx
+    movl %edx, size_fisier
+    pushl %ecx
+
+    /*pushl size_fisier
+    pushl $print_int
+    call printf
+    popl %edx
+    popl %edx*/
+
+    popl %ecx
+
+    pushl %ecx
+
+    /*pushl $print_endl
+    call printf
+    popl %edx*/
+
+    popl %ecx
+
+    //calculez fd ce va intra in program
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+
+    xorl %edx, %edx
+    movl ID_fisier, %eax
+    //in eax e id-ul
+    movl $255, %ebx
+    divl %ebx
+    //in edx e restul modulo 255
+    incl %edx
+    //in edx e id-ul corect al fisierului
+    movl %edx, ID_fisier
+
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+
+    //!!
+    //acum trebuie sa verific daca fd ul este sau nu in memorie si sa l adaug
+
+    pushl %ecx
+    pushl %ebx
+
+    // afisez fd si size
+
+    pushl ID_fisier
+    pushl $print_int
+    call printf
+    popl %edx
+    popl %edx
+
+    pushl size_fisier
+    pushl $print_int
+    call printf
+    popl %edx
+    popl %edx
+
+    movl $8, %eax
+    cmpl %eax, size_fisier
+    jle is_in_memory_cant_add
+
+    lea vect, %edi
+    movl $0, %ecx
+    movl $0, %eax
+    movb ID_fisier, %al
+is_in_memory_loop:
+    cmpl size_of_memory, %ecx
+    je is_in_memory_can_add
+
+    cmpb %al, (%edi, %ecx, 1)
+    je is_in_memory_cant_add
+
+    incl %ecx
+    jmp is_in_memory_loop
+
+is_in_memory_can_add:
+    // call add with fd and size
+    movl $0, %ebx
+    movl %ebx, offset_add
+
+    call ADD
+
+    cmpl $0, %ebx
+    je is_in_memory_cant_add
+    //nu are loc in memorie
+    pushl %ecx
+    pushl %eax
+
+    pushl %ebx
+    pushl %esi
+    pushl %ebp
+    pushl %esi
+    pushl ID_fisier
+    pushl $print_ADD
+    call printf
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+
+    popl %eax
+    popl %ecx
+    // in esi se afla start/end_lin
+    // in ebx se afla end_col
+    // in ebp se afla start_col
+
+    popl %ebx
+    popl %ecx 
+
+    jmp read_next_file
+
+is_in_memory_cant_add:
+    pushl %ecx
+    pushl %eax
+
+    pushl $0
+    pushl $0
+    pushl $0
+    pushl $0
+    pushl ID_fisier
+    pushl $print_ADD
+    call printf
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+    popl %ebx
+
+    popl %eax
+    popl %ecx
+
+    popl %ebx
+    popl %ecx
+
+    jmp read_next_file
+read_next_file:
+    movl %ebx, %eax
+    // mut inapoi in eax pointerul spre directory stream
+
+    jmp loop_dir
+
+loop_dir_done:
+    // need to close all the files and the directory that i've opened
+
 loop_operatii_inc:
     incl %ecx
 
@@ -941,6 +1265,7 @@ loop_operatii_inc:
 operatii_done:
 
 et_exit:
+
     pushl $0
     call fflush
     popl %eax
