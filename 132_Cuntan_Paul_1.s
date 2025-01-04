@@ -1108,24 +1108,23 @@ loop_dir:
 
     // in (%eax) se afla size-ul fisierului
     movl (%eax), %edx
-    movl %edx, size_fisier
-    pushl %ecx
 
-    /*pushl size_fisier
-    pushl $print_int
-    call printf
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    // transform size ul primit de la stat (in bytes) in kilobytes
+    movl %edx, %eax
+    xorl %edx, %edx
+    movl $1024, %ebx
+    divl %ebx
+
+    movl %eax, size_fisier
+
     popl %edx
-    popl %edx*/
-
     popl %ecx
-
-    pushl %ecx
-
-    /*pushl $print_endl
-    call printf
-    popl %edx*/
-
-    popl %ecx
+    popl %ebx
+    popl %eax
 
     //calculez fd ce va intra in program
     pushl %eax
