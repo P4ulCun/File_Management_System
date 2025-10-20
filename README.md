@@ -1,4 +1,4 @@
-# Proiect_ASC
+# File Management System
 
 *To run the assembler sources use either:
 gcc -m32 132_Cuntan_Paul_0.s -o task1 -no-pie
