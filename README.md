@@ -101,16 +101,6 @@ This project provides hands-on experience with:
 - Verification of edge cases
 - Validation against expected behavior
 
-## 📂 Project Structure
-
-```
-file-management-system/
-├── 132_Cuntan_Paul_0.s    # Task 1 implementation
-├── 132_Cuntan_Paul_1.s    # Task 2 implementation
-├── checker.py              # Automated verification script
-└── README.md               # This file
-```
-
 ## 🎓 Educational Value
 
 This project bridges the gap between high-level programming concepts and actual hardware execution, demonstrating:
@@ -130,5 +120,3 @@ This project bridges the gap between high-level programming concepts and actual 
 This project is open source and available for educational purposes.
 
 ---
-
-**Crafted at the intersection of software and silicon!** ⚙️🔧
